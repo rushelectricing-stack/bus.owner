@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bus de la empresa - Inscripción de pasajeros</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="contenedor">
+    <header>
+      <h1>BUS OWNER</h1>
+      <p class="subtitulo">Reserva tu cupo para el día <strong id="fecha-viaje">mañana</strong></p>
+    </header>
+
+    <section class="tarjeta estado">
+      <div class="estado-fila">
+        <img src="{{ url_for('static', filename='logo-anglo.png') }}" alt="Anglo American" class="logo logo-izq" onerror="this.style.visibility='hidden'">
+        <div class="cupos-info">
+          <div class="cupos">
+            <span id="cupos-disponibles">--</span> / <span id="cupo-total">--</span>
+            <small>cupos disponibles</small>
+          </div>
+          <p class="cierre">Cierre de inscripciones: <strong id="hora-cierre">--</strong> hs</p>
+        </div>
+        <img src="{{ url_for('static', filename='logo-cyd.png') }}" alt="Empresa CyD" class="logo logo-der" onerror="this.style.visibility='hidden'">
+      </div>
+      <p id="mensaje-cerrado" class="cerrado-msg oculto">
+        Las inscripciones para mañana están cerradas. Vuelve después de medianoche para el siguiente viaje.
+      </p>
+    </section>
+
+    <section class="tarjeta">
+      <form id="form-inscripcion">
+        <label>
+          Nombre completo
+          <input type="text" id="nombre" name="nombre" placeholder="Ej: Juan Pérez" required maxlength="80">
+        </label>
+        <label>
+          Área / Sector (opcional)
+          <input type="text" id="area" name="area" placeholder="Ej: Mantención" maxlength="80">
+        </label>
+        <button type="submit" id="btn-anotarme">Anotarme</button>
+      </form>
+      <p id="error-msg" class="error oculto"></p>
+      <p id="ok-msg" class="ok oculto"></p>
+    </section>
+
+    <section class="tarjeta">
+      <h2>Pasajeros anotados</h2>
+      <table id="tabla-pasajeros">
+        <thead>
+          <tr><th>#</th><th>Nombre</th><th>Área</th><th></th></tr>
+        </thead>
+        <tbody id="tbody-pasajeros"></tbody>
+      </table>
+      <p id="lista-vacia" class="vacia oculto">Aún no hay nadie anotado para mañana.</p>
+    </section>
+  </div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
