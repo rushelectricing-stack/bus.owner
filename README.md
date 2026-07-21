@@ -16,8 +16,10 @@ cp .env.example .env
 
 Edita `.env` y completa:
 - `MAIL_TO`: correo de la empresa de transporte (ya viene precargado).
-- `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`: datos de la cuenta de correo que enviará el listado.
-  - Con Gmail: activa verificación en 2 pasos y genera una "contraseña de aplicación" en https://myaccount.google.com/apppasswords — usa esa contraseña, no la normal.
+- `MAIL_FROM` y `BREVO_API_KEY`: el correo se envía a través de la API de [Brevo](https://www.brevo.com) (no SMTP directo, porque varios hosts en la nube lo bloquean).
+  1. Crea una cuenta gratis en https://www.brevo.com
+  2. Verifica un correo remitente en **Senders, Domains & Dedicated IPs → Senders → Add a sender** (te llega un correo de confirmación).
+  3. Genera una clave en **SMTP & API → API Keys → Generate a new API key** y pégala en `BREVO_API_KEY`.
 - `CUPO_TOTAL` (default 40) y `HORA_CIERRE` (default 18:00) si quieres cambiarlos.
 
 ## Ejecutar
@@ -44,7 +46,7 @@ Abre http://localhost:5050 en el navegador.
 curl -X POST http://localhost:5050/api/enviar-diario
 ```
 
-Revisa la consola del servidor para ver si el correo se envió correctamente o si falta configurar el SMTP.
+Revisa la consola del servidor para ver si el correo se envió correctamente o si falta configurar Brevo.
 
 ## Desplegar en la nube (Render + cron-job.org)
 
@@ -70,7 +72,7 @@ Para que los empleados accedan desde cualquier dispositivo (celular, PC, cualqui
 2. Click en **New +** → **Web Service** → conecta el repositorio `bus-owner`.
 3. Render detecta el `render.yaml` automáticamente (Build: `pip install -r requirements.txt`, Start: `gunicorn server:app --workers=1 --threads=4`). Si no lo detecta, complétalo manualmente con esos comandos.
 4. En la sección **Environment**, completa las variables marcadas como secretas:
-   - `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` (tus datos de correo, ver sección de Gmail arriba).
+   - `MAIL_FROM`, `BREVO_API_KEY` (ver sección de Brevo arriba).
    - `CRON_SECRET`: inventa una clave larga y random (ej. genera una con `python3 -c "import secrets; print(secrets.token_urlsafe(24))"`). La vas a necesitar en el paso 3.
 5. Click en **Deploy**. Cuando termine, Render te da una URL pública, ej: `https://bus-owner.onrender.com`.
 

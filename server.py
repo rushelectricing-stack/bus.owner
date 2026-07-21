@@ -1,20 +1,16 @@
 import json
 import os
-import smtplib
-import socket
 import threading
 import time
+import urllib.error
+import urllib.request
 from datetime import datetime, timedelta
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
 
 load_dotenv()
-
-socket._getaddrinfo_original = socket.getaddrinfo
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(BASE_DIR, "data", "passengers.json")
@@ -170,51 +166,44 @@ def construir_html(fecha, pasajeros):
     )
 
 
-def _getaddrinfo_ipv4_only(host, port, family=0, type=0, proto=0, flags=0):
-    return socket._getaddrinfo_original(host, port, socket.AF_INET, type, proto, flags)
-
-
 def enviar_lista(fecha, pasajeros):
-    host = os.environ.get("SMTP_HOST")
-    port = int(os.environ.get("SMTP_PORT", 587))
-    user = os.environ.get("SMTP_USER")
-    pwd = os.environ.get("SMTP_PASS")
-    mail_from = os.environ.get("MAIL_FROM", user)
+    api_key = os.environ.get("BREVO_API_KEY")
+    mail_from = os.environ.get("MAIL_FROM")
 
-    if not host or not user or not pwd:
+    if not api_key or not mail_from:
         print(
-            f"[AVISO] SMTP no configurado (revisa .env). No se envió el correo del "
-            f"{fecha}. Pasajeros pendientes: {len(pasajeros)}"
+            f"[AVISO] Brevo no configurado (revisa BREVO_API_KEY/MAIL_FROM). No se envió "
+            f"el correo del {fecha}. Pasajeros pendientes: {len(pasajeros)}"
         )
         return False
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"Listado de pasajeros bus - {fecha}"
-    msg["From"] = mail_from
-    msg["To"] = MAIL_TO
-    msg.attach(MIMEText(construir_html(fecha, pasajeros), "html", "utf-8"))
+    payload = {
+        "sender": {"email": mail_from},
+        "to": [{"email": MAIL_TO}],
+        "subject": f"Listado de pasajeros bus - {fecha}",
+        "htmlContent": construir_html(fecha, pasajeros),
+    }
+    req = urllib.request.Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "api-key": api_key,
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        },
+        method="POST",
+    )
 
-    # Algunos hosts en la nube (ej. Render) no tienen ruta de salida por IPv6,
-    # y Gmail puede resolver primero a una dirección IPv6, lo que causa
-    # "Network is unreachable". Forzamos la resolución DNS a IPv4 mientras dura el envío.
-    socket.getaddrinfo = _getaddrinfo_ipv4_only
     try:
-        if port == 465:
-            with smtplib.SMTP_SSL(host, port, timeout=20) as server:
-                server.login(user, pwd)
-                server.sendmail(mail_from, [MAIL_TO], msg.as_string())
-        else:
-            with smtplib.SMTP(host, port, timeout=20) as server:
-                server.starttls()
-                server.login(user, pwd)
-                server.sendmail(mail_from, [MAIL_TO], msg.as_string())
-        print(f"[OK] Correo enviado a {MAIL_TO} con {len(pasajeros)} pasajeros ({fecha})")
-        return True
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            print(f"[OK] Correo enviado a {MAIL_TO} con {len(pasajeros)} pasajeros ({fecha})")
+            return True
+    except urllib.error.HTTPError as e:
+        print(f"[ERROR] Falló el envío de correo: {e.code} {e.read().decode('utf-8', 'ignore')}")
+        return False
     except Exception as e:
         print(f"[ERROR] Falló el envío de correo: {e}")
         return False
-    finally:
-        socket.getaddrinfo = socket._getaddrinfo_original
 
 
 def proceso_envio_diario():
