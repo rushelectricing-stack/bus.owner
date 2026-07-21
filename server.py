@@ -1,6 +1,7 @@
 import json
 import os
 import smtplib
+import socket
 import threading
 import time
 from datetime import datetime, timedelta
@@ -12,6 +13,8 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
 
 load_dotenv()
+
+socket._getaddrinfo_original = socket.getaddrinfo
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(BASE_DIR, "data", "passengers.json")
@@ -167,6 +170,10 @@ def construir_html(fecha, pasajeros):
     )
 
 
+def _getaddrinfo_ipv4_only(host, port, family=0, type=0, proto=0, flags=0):
+    return socket._getaddrinfo_original(host, port, socket.AF_INET, type, proto, flags)
+
+
 def enviar_lista(fecha, pasajeros):
     host = os.environ.get("SMTP_HOST")
     port = int(os.environ.get("SMTP_PORT", 587))
@@ -187,6 +194,10 @@ def enviar_lista(fecha, pasajeros):
     msg["To"] = MAIL_TO
     msg.attach(MIMEText(construir_html(fecha, pasajeros), "html", "utf-8"))
 
+    # Algunos hosts en la nube (ej. Render) no tienen ruta de salida por IPv6,
+    # y Gmail puede resolver primero a una dirección IPv6, lo que causa
+    # "Network is unreachable". Forzamos la resolución DNS a IPv4 mientras dura el envío.
+    socket.getaddrinfo = _getaddrinfo_ipv4_only
     try:
         with smtplib.SMTP(host, port, timeout=20) as server:
             server.starttls()
@@ -197,6 +208,8 @@ def enviar_lista(fecha, pasajeros):
     except Exception as e:
         print(f"[ERROR] Falló el envío de correo: {e}")
         return False
+    finally:
+        socket.getaddrinfo = socket._getaddrinfo_original
 
 
 def proceso_envio_diario():
