@@ -199,10 +199,15 @@ def enviar_lista(fecha, pasajeros):
     # "Network is unreachable". Forzamos la resolución DNS a IPv4 mientras dura el envío.
     socket.getaddrinfo = _getaddrinfo_ipv4_only
     try:
-        with smtplib.SMTP(host, port, timeout=20) as server:
-            server.starttls()
-            server.login(user, pwd)
-            server.sendmail(mail_from, [MAIL_TO], msg.as_string())
+        if port == 465:
+            with smtplib.SMTP_SSL(host, port, timeout=20) as server:
+                server.login(user, pwd)
+                server.sendmail(mail_from, [MAIL_TO], msg.as_string())
+        else:
+            with smtplib.SMTP(host, port, timeout=20) as server:
+                server.starttls()
+                server.login(user, pwd)
+                server.sendmail(mail_from, [MAIL_TO], msg.as_string())
         print(f"[OK] Correo enviado a {MAIL_TO} con {len(pasajeros)} pasajeros ({fecha})")
         return True
     except Exception as e:
