@@ -17,7 +17,7 @@ DATA_FILE = os.path.join(BASE_DIR, "data", "passengers.json")
 
 CUPO_TOTAL = int(os.environ.get("CUPO_TOTAL", 40))
 HORA_CIERRE = os.environ.get("HORA_CIERRE", "18:00")
-MAIL_TO = os.environ.get("MAIL_TO", "marcelo.vasquez-externo@angloamerican.com")
+MAIL_TO = os.environ.get("MAIL_TO", "ejejejeje@gmail.com")
 TZ = ZoneInfo(os.environ.get("TZ_NAME", "America/Santiago"))
 CRON_SECRET = os.environ.get("CRON_SECRET", "")
 

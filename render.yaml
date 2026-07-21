@@ -13,7 +13,7 @@ services:
       - key: TZ_NAME
         value: "America/Santiago"
       - key: MAIL_TO
-        value: "marcelo.vasquez-externo@angloamerican.com"
+        value: "ejejejeje@gmail.com"
       - key: MAIL_FROM
         sync: false
       - key: BREVO_API_KEY
